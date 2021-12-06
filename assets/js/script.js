@@ -15,7 +15,7 @@ var findMaxTemp = function(arr){
     var maxTempIndex = 0;
     var holdTemp = arr[0].main.temp;
 
-    for (let i=0; i<arr.length; i++) {
+    for (let i=1; i<arr.length; i++) {
         if (parseInt(arr[i].main.temp) > parseInt(holdTemp)) {
             maxTempIndex = i;
         }
@@ -23,23 +23,67 @@ var findMaxTemp = function(arr){
     return maxTempIndex;
 };
 
+var findDateArr = function(arr) {
+    var fiveDayArr = [
+        moment().add(1, 'days').format("YYYY-MM-DD"),
+        moment().add(2, 'days').format("YYYY-MM-DD"),
+        moment().add(3, 'days').format("YYYY-MM-DD"),
+        moment().add(4, 'days').format("YYYY-MM-DD"),
+        moment().add(5, 'days').format("YYYY-MM-DD")
+    ];
+
+    var dateIndex = new Array(5).fill(0);
+    
+    for (let i=0; i<arr.length; i++) {
+
+        if (arr[i].dt_txt.split(" ")[0] === fiveDayArr[0]) {
+            dateIndex[0] = i;
+        } else if (arr[i].dt_txt.split(" ")[0] === fiveDayArr[1]) {
+            dateIndex[1] = i;
+        } else if (arr[i].dt_txt.split(" ")[0] === fiveDayArr[2]) {
+            dateIndex[2] = i;
+        } else if (arr[i].dt_txt.split(" ")[0] === fiveDayArr[3]) {
+            dateIndex[3] = i;
+        } else {
+            dateIndex[4] = i;
+        }
+    }
+    return(dateIndex);
+};
+
 // Locate 5 day forecast from weather object
 var parseForecast = function(obj){
-    var currentDate = moment().format("YYYY-MM-DD");
+
     var futureForecastArr = obj.list;
+    var dateIndex = findDateArr(futureForecastArr);
 
-    var day1Index = findMaxTemp(futureForecastArr.slice(0,7));
-    var day2Index = findMaxTemp(futureForecastArr.slice(8,15)) + 7;
-    var day3Index = findMaxTemp(futureForecastArr.slice(16,23)) + 15;
-    var day4Index = findMaxTemp(futureForecastArr.slice(24,31)) + 23;
-    var day5Index = findMaxTemp(futureForecastArr.slice(32,39)) + 31;
-
-    // loop thru array
-    // find max temp of that day
-    // find wind 
-    // find humidity
-    // return index
-    return [day1Index, day2Index, day3Index, day4Index, day5Index];
+    var maxTempArr = new Array();
+    var start = 0;
+    for (let i=0; i<dateIndex.length; i++) {
+        if (i === 0) {
+            maxTempIndex = findMaxTemp(futureForecastArr.slice(start, dateIndex[i]+1));
+            maxTempArr
+            .push(
+                {
+                    date: moment(futureForecastArr[maxTempIndex].dt_txt).format("M/DD/YYYY"),
+                    temp: futureForecastArr[maxTempIndex].main.temp,
+                    wind: futureForecastArr[maxTempIndex].wind.speed,
+                    humidity: futureForecastArr[maxTempIndex].main.humidity
+                });
+        } else {
+            maxTempIndex = findMaxTemp(futureForecastArr.slice(start, dateIndex[i]+1)) + dateIndex[i-1];
+            maxTempArr
+            .push(
+            {
+                date: moment(futureForecastArr[maxTempIndex].dt_txt).format("M/DD/YYYY"),
+                temp: futureForecastArr[maxTempIndex].main.temp,
+                wind: futureForecastArr[maxTempIndex].wind.speed,
+                humidity: futureForecastArr[maxTempIndex].main.humidity
+            });
+        }
+        start = dateIndex[i]+1;
+    }
+    return(maxTempArr);
 };
 
 var createCurrentForecast = function(obj, container) {
@@ -89,9 +133,9 @@ fetch(url1)
     fetch(url2)
     .then(response => response.json())
     .then(data => {
-        console.log(data)
-        console.log(parseForecast(data));
-    })
+        let fiveDayForecastIndex = parseForecast(data);
+        console.log(fiveDayForecastIndex);
+    });
 
     // url for UV index
     var url3 = "https://api.openweathermap.org/data/2.5/onecall?lat="+ lat + "&lon=" + lon + "&exclude=none" + "&appid=" + apiKey;
