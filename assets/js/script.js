@@ -1,14 +1,10 @@
 // Listen to 
 var formEl = document.getElementById("city-search");
-var forecastContainerEl = document.getElementById("current-forecast")
-var currentDate = moment().format("DD/MM/YYYY");
+var currentForecastEl = document.getElementById("current-forecast");
+var fiveDayForecastEl = document.getElementById("five-day-forecast");
+var currentDate = moment().format("MM/DD/YYYY");
 
 var apiKey = "08de60513f8aaba79d4697d19640606f";
-
-// Gets data from weather place {
-//      Setup variable for APIs
-//      API log console
-
 
 // find maximum temperature of time block and return its index
 var findMaxTemp = function(arr){
@@ -86,6 +82,7 @@ var parseForecast = function(obj){
     return(maxTempArr);
 };
 
+// creates the HTML elements to display current day forecast
 var createCurrentForecast = function(obj, container) {
     var headEl = document.createElement("h3");
     var tempEl = document.createElement("div");
@@ -106,6 +103,31 @@ var createCurrentForecast = function(obj, container) {
     container.appendChild(uvEl);
 };
 
+var createFiveDayForecast = function(arr) {
+    let i=0;
+
+    $(fiveDayForecastEl.children).each(function() {
+        let futureDate = document.createElement("h5");
+        let futureTemp = document.createElement("p");
+        let futureWind = document.createElement("p");
+        let futureHum = document.createElement("p");
+
+        // console.log($(this).find("#forecast"));
+
+        futureDate.textContent = arr[i].date;
+        futureTemp.textContent = "Temp: " + arr[i].temp;
+        futureWind.textContent = "Wind: " + arr[i].wind;
+        futureHum.textContent = "Humidity: " + arr[i].humidity;
+
+        $(this).find("#forecast").append(futureDate);
+        $(this).find("#forecast").append(futureTemp);
+        $(this).find("#forecast").append(futureWind);
+        $(this).find("#forecast").append(futureHum);
+
+        i++; 
+    });
+};
+
 //add s in https when pushing to main branch
 var cityName = "Columbus"
 var url1 = "https://api.openweathermap.org/data/2.5/weather?q="+ cityName + "&appid=" + apiKey + "&units=imperial";
@@ -114,42 +136,40 @@ var url1 = "https://api.openweathermap.org/data/2.5/weather?q="+ cityName + "&ap
 fetch(url1)
 .then(response => response.json())
 .then(data => {
-    // latitude and longitude for later usage
-    var lat = data.coord.lat;
-    var lon = data.coord.lon;
-
-    // object to store current weather attributes
-     currentWeather = {
-        city: cityName,
-        temp: data.main.temp,
-        wind: data.wind.speed,
-        humidity: data.main.humidity,
-    };
+        // latitude and longitude for later usage
+        var lat = data.coord.lat;
+        var lon = data.coord.lon;
+    
+        // object to store current weather attributes
+         currentWeather = {
+            city: cityName,
+            temp: data.main.temp,
+            wind: data.wind.speed,
+            humidity: data.main.humidity
+        };
+    
+        // url for UV index
+        var url2 = "https://api.openweathermap.org/data/2.5/onecall?lat="+ lat + "&lon=" + lon + "&exclude=none" + "&appid=" + apiKey;
+    
+        // get uv index and create current forecast elements
+        fetch(url2)
+        .then(response => response.json())
+        .then(data => {
+            Object.assign(currentWeather, {uv: data.current.uvi});
+            createCurrentForecast(currentWeather, currentForecastEl);
+        });
 
     // url for 5 day forecast
-    var url2 = "https://api.openweathermap.org/data/2.5/forecast?q=" + cityName + "&appid=" + apiKey;
+    var url3 = "https://api.openweathermap.org/data/2.5/forecast?q=" + cityName + "&appid=" + apiKey;
     
     // get 5 day forecast
-    fetch(url2)
-    .then(response => response.json())
-    .then(data => {
-        let fiveDayForecastIndex = parseForecast(data);
-        console.log(fiveDayForecastIndex);
-    });
-
-    // url for UV index
-    var url3 = "https://api.openweathermap.org/data/2.5/onecall?lat="+ lat + "&lon=" + lon + "&exclude=none" + "&appid=" + apiKey;
-
-    // get uv index and create current forecast elements
     fetch(url3)
     .then(response => response.json())
     .then(data => {
-        Object.assign(currentWeather, {uv: data.current.uvi});
-        createCurrentForecast(currentWeather, forecastContainerEl);
+        let fiveDayForecast = parseForecast(data);
+        // console.log(fiveDayForecastEl.children);
+
+        // Update 5-day forecast cards
+        createFiveDayForecast(fiveDayForecast);
     });
-    // console.log(forecastContainerEl);
-    // console.log(currentWeather)
-    
-    // createCurrentForecast(currentWeather, forecastContainerEl);
-    // console.log(currentWeather.cityName)
 });
