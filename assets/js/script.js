@@ -36,23 +36,14 @@ var findDateArr = function(array) {
     for (let i=0; i<array.length; i++) {
 
         if (array[i].dt_txt.split(" ")[0] === fiveDayArr[0]) {
-
             dateIndex[0] = i;
-
         } else if (array[i].dt_txt.split(" ")[0] === fiveDayArr[1]) {
-
             dateIndex[1] = i;
-
         } else if (array[i].dt_txt.split(" ")[0] === fiveDayArr[2]) {
-
             dateIndex[2] = i;
-
         } else if (array[i].dt_txt.split(" ")[0] === fiveDayArr[3]) {
-
             dateIndex[3] = i;
-
         } else {
-
             dateIndex[4] = i;
         }
     }
@@ -83,7 +74,8 @@ var parseForecast = function(obj){
                     date: moment(futureForecastArr[maxTempIndex].dt_txt).format("M/DD/YYYY"),
                     temp: futureForecastArr[maxTempIndex].main.temp,
                     wind: futureForecastArr[maxTempIndex].wind.speed,
-                    humidity: futureForecastArr[maxTempIndex].main.humidity
+                    humidity: futureForecastArr[maxTempIndex].main.humidity,
+                    icon: futureForecastArr[maxTempIndex].weather[0].icon
                 });
         } else {
             // slice will return an array from [start, index - 1]
@@ -96,7 +88,8 @@ var parseForecast = function(obj){
                 date: moment(futureForecastArr[maxTempIndex].dt_txt).format("M/DD/YYYY"),
                 temp: futureForecastArr[maxTempIndex].main.temp,
                 wind: futureForecastArr[maxTempIndex].wind.speed,
-                humidity: futureForecastArr[maxTempIndex].main.humidity
+                humidity: futureForecastArr[maxTempIndex].main.humidity,
+                icon: futureForecastArr[maxTempIndex].weather[0].icon
             });
         }
         // set start to current Index + 1, start of new subset of Array.
@@ -106,48 +99,82 @@ var parseForecast = function(obj){
 };
 
 // creates the HTML elements to display current day forecast
-var createCurrentForecast = function(obj, container) {
-    var headEl = document.createElement("h3");
-    var tempEl = document.createElement("div");
-    var windEl = document.createElement("div");
-    var humEl = document.createElement("div");
-    var uvEl = document.createElement("div");
-
-    headEl.textContent = obj.city + " (" + currentDate + ")";
-    tempEl.textContent = "Temp: " + obj.temp + " \u00B0F";
-    windEl.textContent = "Wind: " + obj.wind + " MPH";
-    humEl.textContent = "Humidity: " + obj.humidity + "%";
-    uvEl.textContent = "UV Index: " + obj.uv;
-
-    container.appendChild(headEl);
-    container.appendChild(tempEl);
-    container.appendChild(windEl);
-    container.appendChild(humEl);
-    container.appendChild(uvEl);
+var createCurrentDayForecast = function(obj, container) {
+    var units = {
+        temp: "\u00B0F",
+        wind: "MPH",
+        humidity: "%"
+    };
+    
+    let iterator = Object.keys(obj);
+    for (const key of iterator) {
+        if (key === "city") {
+            var holdEl = document.createElement("h3");
+            holdEl.setAttribute("id", "current-city-weather")
+            holdEl.textContent = obj[key]+ " ("+currentDate+")";
+            container.appendChild(holdEl);
+        } else if (key === "icon") {
+            var holdEl = document.getElementById("current-city-weather");
+            let iconCode = obj[key];
+            let iconUrl = "https://openweathermap.org/img/wn/" + iconCode + ".png";
+            holdEl.insertAdjacentHTML("beforeend", "<img src='"+iconUrl+"'/>");
+        } else {
+            if (key === "uv") {
+                var holdEl = document.createElement("p");
+                holdEl.textContent = key.toUpperCase() + ": " + obj[key]; 
+                container.appendChild(holdEl);
+            } else {
+                var holdEl = document.createElement("p");
+                holdEl.textContent = key.charAt(0).toUpperCase() + key.slice(1) + ": " + obj[key] + " " + units[key]; 
+                container.appendChild(holdEl);
+            }
+        }
+    };
 };
 
-var createFiveDayForecast = function(arr) {
+var createFiveDayForecast = function(arrayOfObjects) {
     let i=0;
-
     $(fiveDayForecastEl.children).each(function() {
+        // console.log($(this).find("#forecast")[0])
+        // createCurrentDayForecast(arrayOfObjects[i], $(this).find("#forecast")[0]);
+        // for (let i=0; i<arrayOfObjects.length; i++) {
+        //     if (arrayOfObjects[i].date)
+        //     let holdEl = document.createElement("")
+        // }
+        // let iterator = Object.keys(arrayOfObjects[i]);
+        // for (const key of iterator) {
+        //     if (key === "date") {
+        //         let holdEl = document.createElement("h5");
+        //         holdEl.textContent = arrayOfObjects[i][key];
+        //         $(this).find("#forecast").append(holdEl);
+        //     } else if (key === "icon") {
+                
+        //     } else {
+        //         let holdEl = document.createElement("p");
+        //         holdEl.textContent = key.charAt(0).toUpperCase() + key.slice(1) + ": " + arrayOfObjects[i][key] + " " + units[key]; 
+        //         $(this).find("#forecast").append(holdEl);
+        //     }
+        // }
         let futureDate = document.createElement("h5");
         let futureTemp = document.createElement("p");
         let futureWind = document.createElement("p");
         let futureHum = document.createElement("p");
-
-        // console.log($(this).find("#forecast"));
-
-        futureDate.textContent = arr[i].date;
-        futureTemp.textContent = "Temp: " + arr[i].temp + " \u00B0F";
-        futureWind.textContent = "Wind: " + arr[i].wind + " MPH";
-        futureHum.textContent = "Humidity: " + arr[i].humidity + "%";
+        
+        let futureIcon = document.createElement("img");
+        let iconCode = arrayOfObjects[i].icon;
+        let iconUrl = "https://openweathermap.org/img/wn/" + iconCode + ".png";
+        
+        futureIcon.setAttribute("src", iconUrl);
+        futureDate.textContent = arrayOfObjects[i].date;
+        futureTemp.textContent = "Temp: " + arrayOfObjects[i].temp + " \u00B0F";
+        futureWind.textContent = "Wind: " + arrayOfObjects[i].wind + " MPH";
+        futureHum.textContent = "Humidity: " + arrayOfObjects[i].humidity + "%";
 
         $(this).find("#forecast").append(futureDate);
+        $(this).find("#forecast").append(futureIcon);
         $(this).find("#forecast").append(futureTemp);
         $(this).find("#forecast").append(futureWind);
         $(this).find("#forecast").append(futureHum);
-
-        i++; 
     });
 };
 
@@ -157,7 +184,7 @@ var removeForecast = function() {
     })
 
     $("#five-day-forecast").children().each(function(){
-        console.log($(this).find("#forecast").children().remove());
+        ($(this).find("#forecast").children().remove());
     });
 };
 
@@ -183,7 +210,8 @@ var startDisplayForecast = function(event) {
             city: cityName,
             temp: data.main.temp,
             wind: data.wind.speed,
-            humidity: data.main.humidity
+            humidity: data.main.humidity,
+            icon: data.weather[0].icon
         };
     
         // url for UV index
@@ -194,7 +222,7 @@ var startDisplayForecast = function(event) {
         .then(response => response.json())
         .then(data => {
             Object.assign(currentWeather, {uv: data.current.uvi});
-            createCurrentForecast(currentWeather, currentForecastEl);
+            createCurrentDayForecast(currentWeather, currentForecastEl);
         });
 
         // url for 5 day forecast
@@ -204,8 +232,10 @@ var startDisplayForecast = function(event) {
         fetch(url3)
         .then(response => response.json())
         .then(data => {
+            // console.log(data)
             let fiveDayForecast = parseForecast(data);
-
+            // console.log(fiveDayForecast)
+            
             // Update 5-day forecast cards
             createFiveDayForecast(fiveDayForecast);
         });
