@@ -103,7 +103,7 @@ var parseForecast = function(obj){
 };
 
 var uvIndexSeverity = function(uvIndex){
-    let severity;
+    let severity= "";
     
     if (uvIndex <= 2) {
         severity = 'success';
@@ -154,7 +154,7 @@ var createCurrentDayForecast = function(obj, container, isFiveDayForecast) {
                 container.appendChild(holdEl); 
             }
         } else {
-            container.setAttribute("class", "bg-secondary rounded");
+            container.setAttribute("class", "bg-secondary bg-gradient rounded");
             if (key === "date") {
                 var holdEl = document.createElement("p");
                 holdEl.textContent =  obj[key]; 
@@ -184,9 +184,11 @@ var displaySearches = function() {
     for (let i=0; i<citySearches.length; i++) {
         var searchEl = document.createElement("p");
         searchEl.textContent = citySearches[i].city;
+        searchEl.setAttribute("class", "bg-secondary bg-gradient my-3 rounded text-center");
         searchHistoryEl.appendChild(searchEl);
     }
 }; 
+
 // load previous searches from local storage and update citySearches array.
 var loadSearches = function() {
     var previousCitySearches = JSON.parse(localStorage.getItem("weather"));
@@ -195,8 +197,6 @@ var loadSearches = function() {
         for (search of previousCitySearches)
         citySearches.push(search);
     }
-
-
 };
 
 // save searches to local storage.
@@ -282,6 +282,6 @@ var startDisplayForecast = function(event) {
 };
 
 loadSearches();
-displaySearches();
+displaySearches(); 
 // Event listener for form submits
 searchButtonEl.addEventListener("submit", startDisplayForecast);
