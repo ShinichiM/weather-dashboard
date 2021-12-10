@@ -4,9 +4,13 @@ var currentForecastEl = document.getElementById("current-forecast");
 var fiveDayForecastEl = document.getElementById("five-day-forecast");
 var searchButtonEl  = document.getElementById("city-search");
 var cityTextEl = document.getElementById("city");
+var searchHistoryEl = document.getElementById("search-history");
+
+var citySearches = new Array();
 
 var currentDate = moment().format("MM/DD/YYYY");
 var apiKey = "08de60513f8aaba79d4697d19640606f";
+var isFivedayForecast = false;
 
 // find maximum temperature of time block and return its index
 var findMaxTemp = function(arr){
@@ -71,11 +75,11 @@ var parseForecast = function(obj){
             maxTempArr
             .push(
                 {   // dt_txt attribute for date, returns string
-                    date: moment(futureForecastArr[maxTempIndex].dt_txt).format("M/DD/YYYY"),
+                    date: moment(futureForecastArr[maxTempIndex].dt_txt).format("MM/DD/YYYY"),
+                    icon: futureForecastArr[maxTempIndex].weather[0].icon,
                     temp: futureForecastArr[maxTempIndex].main.temp,
                     wind: futureForecastArr[maxTempIndex].wind.speed,
-                    humidity: futureForecastArr[maxTempIndex].main.humidity,
-                    icon: futureForecastArr[maxTempIndex].weather[0].icon
+                    humidity: futureForecastArr[maxTempIndex].main.humidity
                 });
         } else {
             // slice will return an array from [start, index - 1]
@@ -86,10 +90,10 @@ var parseForecast = function(obj){
             .push(
             {   // dt_txt attribute for date, returns string
                 date: moment(futureForecastArr[maxTempIndex].dt_txt).format("M/DD/YYYY"),
+                icon: futureForecastArr[maxTempIndex].weather[0].icon,
                 temp: futureForecastArr[maxTempIndex].main.temp,
                 wind: futureForecastArr[maxTempIndex].wind.speed,
-                humidity: futureForecastArr[maxTempIndex].main.humidity,
-                icon: futureForecastArr[maxTempIndex].weather[0].icon
+                humidity: futureForecastArr[maxTempIndex].main.humidity
             });
         }
         // set start to current Index + 1, start of new subset of Array.
@@ -98,83 +102,116 @@ var parseForecast = function(obj){
     return(maxTempArr);
 };
 
-// creates the HTML elements to display current day forecast
-var createCurrentDayForecast = function(obj, container) {
+var uvIndexSeverity = function(uvIndex){
+    let severity;
+    
+    if (uvIndex <= 2) {
+        severity = 'success';
+    } else if (uvIndex > 2 && uvIndex <=5) {
+        severity = 'warning';
+    } else if (uvIndex > 5) {
+        severity = 'danger'
+    }
+    return severity;
+};
+
+// creates the HTML elements to display current day forecast, or individual forecast for the week.
+var createCurrentDayForecast = function(obj, container, isFiveDayForecast) {
+    // Units for weather attribute
     var units = {
         temp: "\u00B0F",
         wind: "MPH",
         humidity: "%"
     };
     
+    // Get an array of keys stored in the object
     let iterator = Object.keys(obj);
+
+    // Loop through keys
     for (const key of iterator) {
-        if (key === "city") {
-            var holdEl = document.createElement("h3");
-            holdEl.setAttribute("id", "current-city-weather")
-            holdEl.textContent = obj[key]+ " ("+currentDate+")";
-            container.appendChild(holdEl);
-        } else if (key === "icon") {
-            var holdEl = document.getElementById("current-city-weather");
-            let iconCode = obj[key];
-            let iconUrl = "https://openweathermap.org/img/wn/" + iconCode + ".png";
-            holdEl.insertAdjacentHTML("beforeend", "<img src='"+iconUrl+"'/>");
+        if (!isFiveDayForecast) {
+            if (key === "city") {
+                var holdEl = document.createElement("h3");
+                holdEl.setAttribute("id", "current-city-weather")
+                holdEl.textContent = obj[key]+ " ("+currentDate+")";
+                container.appendChild(holdEl); 
+            } else if (key === "icon") {
+                var holdEl = document.getElementById("current-city-weather");
+                var iconCode = obj[key];
+                var iconUrl = "https://openweathermap.org/img/wn/" + iconCode + ".png";
+                holdEl.insertAdjacentHTML("beforeend", "<img src='"+iconUrl+"'/>");
+            } else if (key === "uv") {
+                var holdEl = document.createElement("p");
+                var holdUV = document.createElement("span");
+                holdEl.textContent = key.toUpperCase() + " Index: ";
+                holdUV.textContent = obj[key];
+                holdUV.setAttribute("class", "bg-" + uvIndexSeverity(obj[key]) +" rounded px-2 text-white")
+                holdEl.insertAdjacentElement("beforeend", holdUV);
+                container.appendChild(holdEl); 
+            } else {
+                var holdEl = document.createElement("p");                    
+                holdEl.textContent = key.charAt(0).toUpperCase() + key.slice(1) + ": " + obj[key] + " " + units[key]; 
+                container.appendChild(holdEl); 
+            }
         } else {
-            if (key === "uv") {
+            container.setAttribute("class", "bg-secondary rounded");
+            if (key === "date") {
+                var holdEl = document.createElement("p");
+                holdEl.textContent =  obj[key]; 
+                holdEl.setAttribute("class", "fw-bold");
+                container.appendChild(holdEl); 
+            } else if (key === "uv") {
                 var holdEl = document.createElement("p");
                 holdEl.textContent = key.toUpperCase() + ": " + obj[key]; 
+                container.appendChild(holdEl); 
+            } else if (key === "icon") {
+                var holdEl = document.createElement("img");
+                let iconCode = obj[key];
+                let iconUrl = "https://openweathermap.org/img/wn/" + iconCode + ".png";
+                holdEl.setAttribute("src", iconUrl);
                 container.appendChild(holdEl);
-            } else {
-                var holdEl = document.createElement("p");
+            } else {   
+                var holdEl = document.createElement("p");                    
                 holdEl.textContent = key.charAt(0).toUpperCase() + key.slice(1) + ": " + obj[key] + " " + units[key]; 
-                container.appendChild(holdEl);
+                container.appendChild(holdEl); 
             }
+            holdEl.setAttribute("class", "text-white fw-bold small-font-size")
         }
-    };
+    }
+};
+
+var displaySearches = function() {
+    for (let i=0; i<citySearches.length; i++) {
+        var searchEl = document.createElement("p");
+        searchEl.textContent = citySearches[i].city;
+        searchHistoryEl.appendChild(searchEl);
+    }
+}; 
+// load previous searches from local storage and update citySearches array.
+var loadSearches = function() {
+    var previousCitySearches = JSON.parse(localStorage.getItem("weather"));
+
+    if (previousCitySearches) {
+        for (search of previousCitySearches)
+        citySearches.push(search);
+    }
+
+
+};
+
+// save searches to local storage.
+var saveSearches = function(cityName) {
+    citySearches.push(cityName);
+    localStorage.setItem("weather", JSON.stringify(citySearches));
 };
 
 var createFiveDayForecast = function(arrayOfObjects) {
     let i=0;
-    $(fiveDayForecastEl.children).each(function() {
-        // console.log($(this).find("#forecast")[0])
-        // createCurrentDayForecast(arrayOfObjects[i], $(this).find("#forecast")[0]);
-        // for (let i=0; i<arrayOfObjects.length; i++) {
-        //     if (arrayOfObjects[i].date)
-        //     let holdEl = document.createElement("")
-        // }
-        // let iterator = Object.keys(arrayOfObjects[i]);
-        // for (const key of iterator) {
-        //     if (key === "date") {
-        //         let holdEl = document.createElement("h5");
-        //         holdEl.textContent = arrayOfObjects[i][key];
-        //         $(this).find("#forecast").append(holdEl);
-        //     } else if (key === "icon") {
-                
-        //     } else {
-        //         let holdEl = document.createElement("p");
-        //         holdEl.textContent = key.charAt(0).toUpperCase() + key.slice(1) + ": " + arrayOfObjects[i][key] + " " + units[key]; 
-        //         $(this).find("#forecast").append(holdEl);
-        //     }
-        // }
-        let futureDate = document.createElement("h5");
-        let futureTemp = document.createElement("p");
-        let futureWind = document.createElement("p");
-        let futureHum = document.createElement("p");
-        
-        let futureIcon = document.createElement("img");
-        let iconCode = arrayOfObjects[i].icon;
-        let iconUrl = "https://openweathermap.org/img/wn/" + iconCode + ".png";
-        
-        futureIcon.setAttribute("src", iconUrl);
-        futureDate.textContent = arrayOfObjects[i].date;
-        futureTemp.textContent = "Temp: " + arrayOfObjects[i].temp + " \u00B0F";
-        futureWind.textContent = "Wind: " + arrayOfObjects[i].wind + " MPH";
-        futureHum.textContent = "Humidity: " + arrayOfObjects[i].humidity + "%";
+    isFiveDayForecast = true;
 
-        $(this).find("#forecast").append(futureDate);
-        $(this).find("#forecast").append(futureIcon);
-        $(this).find("#forecast").append(futureTemp);
-        $(this).find("#forecast").append(futureWind);
-        $(this).find("#forecast").append(futureHum);
+    $(fiveDayForecastEl.children).each(function() {
+        createCurrentDayForecast(arrayOfObjects[i], $(this).find("#forecast")[0], isFiveDayForecast);
+        i++;
     });
 };
 
@@ -193,10 +230,14 @@ var startDisplayForecast = function(event) {
 
     removeForecast();
 
-    var cityName = cityTextEl.value;
+    var cityName = {
+        city: cityTextEl.value
+    };
+
+    saveSearches(cityName);
 
     // url to get current weather data
-    var url1 = "https://api.openweathermap.org/data/2.5/weather?q="+ cityName + "&appid=" + apiKey + "&units=imperial";
+    var url1 = "https://api.openweathermap.org/data/2.5/weather?q="+ cityName.city + "&appid=" + apiKey + "&units=imperial";
 
 
     fetch(url1)
@@ -205,9 +246,9 @@ var startDisplayForecast = function(event) {
         // latitude and longitude for later usage
         var lat = data.coord.lat;
         var lon = data.coord.lon;
-    
+        
          currentWeather = {
-            city: cityName,
+            city: cityName.city,
             temp: data.main.temp,
             wind: data.wind.speed,
             humidity: data.main.humidity,
@@ -226,15 +267,13 @@ var startDisplayForecast = function(event) {
         });
 
         // url for 5 day forecast
-        var url3 = "https://api.openweathermap.org/data/2.5/forecast?q=" + cityName + "&appid=" + apiKey + "&units=imperial";
+        var url3 = "https://api.openweathermap.org/data/2.5/forecast?q=" + cityName.city + "&appid=" + apiKey + "&units=imperial";
 
         // get 5 day forecast
         fetch(url3)
         .then(response => response.json())
         .then(data => {
-            // console.log(data)
             let fiveDayForecast = parseForecast(data);
-            // console.log(fiveDayForecast)
             
             // Update 5-day forecast cards
             createFiveDayForecast(fiveDayForecast);
@@ -242,5 +281,7 @@ var startDisplayForecast = function(event) {
     });
 };
 
-// Add Event Listener to form submits
+loadSearches();
+displaySearches();
+// Event listener for form submits
 searchButtonEl.addEventListener("submit", startDisplayForecast);
