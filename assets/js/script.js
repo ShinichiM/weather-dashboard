@@ -154,7 +154,6 @@ var createCurrentDayForecast = function (obj, container, isFiveDayForecast) {
                 container.appendChild(holdEl);
             }
         } else {
-            container.setAttribute("class", "bg-secondary bg-gradient rounded");
             if (key === "date") {
                 var holdEl = document.createElement("p");
                 holdEl.textContent = obj[key];
@@ -175,6 +174,7 @@ var createCurrentDayForecast = function (obj, container, isFiveDayForecast) {
                 holdEl.textContent = key.charAt(0).toUpperCase() + key.slice(1) + ": " + obj[key] + " " + units[key];
                 container.appendChild(holdEl);
             }
+            container.setAttribute("class", "bg-secondary bg-gradient rounded");
             holdEl.setAttribute("class", "text-white fw-bold small-font-size")
         }
     }
@@ -182,10 +182,16 @@ var createCurrentDayForecast = function (obj, container, isFiveDayForecast) {
 
 var displaySearches = function () {
     for (let i = 0; i < citySearches.length; i++) {
-        let searchEl = document.createElement("p");
+        let searchEl = document.createElement("button");
         searchEl.textContent = citySearches[i].city;
-        searchEl.setAttribute("class", "bg-secondary bg-gradient my-3 rounded text-center text-white fw-bold border-bottom border-dark border-2");
+        searchEl.setAttribute("class", "d-block w-100 bg-secondary bg-gradient my-3 rounded text-center text-white fw-bold border-bottom border-dark border-2");
         searchHistoryEl.appendChild(searchEl);
+        
+        // listen to clicks on previous searches and trigger a "search click"
+        searchEl.addEventListener("click", function(e){
+            cityTextEl.value = citySearches[i].city;
+            $("#search").trigger("click");
+        });
     }
 };
 
@@ -202,11 +208,11 @@ var loadSearches = function () {
 };
 
 // save searches to local storage.
-var saveSearches = function(cityName) {
+var saveSearches = function (cityName) {
     for (let index = 0; index < citySearches.length; index++) {
-    if (citySearches[index].city == cityName.city){
+        if (citySearches[index].city == cityName.city) {
             return
-        }        
+        }
     }
     citySearches.push(cityName);
     localStorage.setItem("weather", JSON.stringify(citySearches));
@@ -232,75 +238,65 @@ var removeForecast = function () {
     });
 };
 
-var startDisplayForecast = function (event) {
+var startDisplayForecast = function(event) {
     event.preventDefault();
 
-    let holdCityName = cityTextEl.value.split(" ");
-    
-    console.log(holdCityName)
+    removeForecast();
+    var cityName = {
+        city: cityTextEl.value
+    };
+    // url to get current weather data
+    var url1 = "https://api.openweathermap.org/data/2.5/weather?q=" + cityName.city + "&appid=" + apiKey + "&units=imperial";
+    fetch(url1)
+        .then(response => response.json())
+        .then(data => {
+            // latitude and longitude for later usage
+            var lat = data.coord.lat;
+            var lon = data.coord.lon;
 
+            currentWeather = {
+                city: cityName.city,
+                temp: data.main.temp,
+                wind: data.wind.speed,
+                humidity: data.main.humidity,
+                icon: data.weather[0].icon
+            };
 
-    if (cityTextEl === "") {
-        alert("Please Enter a Valid City");
-    } else {
-        removeForecast();
+            // url for UV index
+            var url2 = "https://api.openweathermap.org/data/2.5/onecall?lat=" + lat + "&lon=" + lon + "&exclude=none" + "&appid=" + apiKey;
 
-        var cityName = {
-            city: cityTextEl.value
-        };
-
-        console.log(cityTextEl.value)
-        // url to get current weather data
-        var url1 = "https://api.openweathermap.org/data/2.5/weather?q=" + cityName.city + "&appid=" + apiKey + "&units=imperial";
-            fetch(url1)
-                .then(response =>response.json())
+            // get uv index and create current forecast elements
+            fetch(url2)
+                .then(response => response.json())
                 .then(data => {
-                    // latitude and longitude for later usage
-                    var lat = data.coord.lat;
-                    var lon = data.coord.lon;
+                    Object.assign(currentWeather, { uv: data.current.uvi });
+                    createCurrentDayForecast(currentWeather, currentForecastEl);
+                });
 
-                    currentWeather = {
-                        city: cityName.city,
-                        temp: data.main.temp,
-                        wind: data.wind.speed,
-                        humidity: data.main.humidity,
-                        icon: data.weather[0].icon
-                    };
+            // url for 5 day forecast
+            var url3 = "https://api.openweathermap.org/data/2.5/forecast?q=" + cityName.city + "&appid=" + apiKey + "&units=imperial";
 
-                    // url for UV index
-                    var url2 = "https://api.openweathermap.org/data/2.5/onecall?lat=" + lat + "&lon=" + lon + "&exclude=none" + "&appid=" + apiKey;
+            // get 5 day forecast
+            fetch(url3)
+                .then(response => response.json())
+                .then(data => {
+                    let fiveDayForecast = parseForecast(data);
 
-                    // get uv index and create current forecast elements
-                    fetch(url2)
-                        .then(response => response.json())
-                        .then(data => {
-                            Object.assign(currentWeather, { uv: data.current.uvi });
-                            createCurrentDayForecast(currentWeather, currentForecastEl);
-                        });
-
-                    // url for 5 day forecast
-                    var url3 = "https://api.openweathermap.org/data/2.5/forecast?q=" + cityName.city + "&appid=" + apiKey + "&units=imperial";
-
-                    // get 5 day forecast
-                    fetch(url3)
-                        .then(response => response.json())
-                        .then(data => {
-                            let fiveDayForecast = parseForecast(data);
-
-                            // Update 5-day forecast cards
-                            createFiveDayForecast(fiveDayForecast);
-                        });
-                        saveSearches(cityName);
-                    }).catch((error)=>{
-                        if (error) {
-                            alert("That search criteria is invalid, please try again...");
-                        }
-                    });
-    }
-
+                    // Update 5-day forecast cards
+                    createFiveDayForecast(fiveDayForecast);
+                });
+            saveSearches(cityName);
+            cityTextEl.value = "";
+        }).catch((error) => {
+            if (error) {
+                alert("That search criteria is invalid, please try again...");
+            }
+        });
 };
+
 loadSearches();
 displaySearches();
+
 // Event listener for form submits
 searchButtonEl.addEventListener("submit", startDisplayForecast);
 
