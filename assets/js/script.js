@@ -155,7 +155,8 @@ var createCurrentDayForecast = function (obj, container, isFiveDayForecast) {
             }
         } else {
             if (key === "date") {
-                var holdEl = document.createElement("p");
+                var holdEl = document.createElement("h5");
+                // holdEl.setAttribute("class", "")
                 holdEl.textContent = obj[key];
                 holdEl.setAttribute("class", "fw-bold");
                 container.appendChild(holdEl);
@@ -174,7 +175,8 @@ var createCurrentDayForecast = function (obj, container, isFiveDayForecast) {
                 holdEl.textContent = key.charAt(0).toUpperCase() + key.slice(1) + ": " + obj[key] + " " + units[key];
                 container.appendChild(holdEl);
             }
-            container.setAttribute("class", "bg-secondary bg-gradient rounded");
+            container.setAttribute("class", "bg-dark bg-gradient rounded");
+            container.setAttribute("style", "--bs-bg-opacity: .85")
             holdEl.setAttribute("class", "text-white fw-bold small-font-size")
         }
     }
@@ -184,7 +186,8 @@ var displaySearches = function () {
     for (let i = 0; i < citySearches.length; i++) {
         let searchEl = document.createElement("button");
         searchEl.textContent = citySearches[i].city;
-        searchEl.setAttribute("class", "d-block w-100 bg-secondary bg-gradient my-3 rounded text-center text-white fw-bold border-bottom border-dark border-2");
+        searchEl.setAttribute("class", "d-block w-100 bg-secondary bg-gradient my-3 rounded text-center");
+        searchEl.setAttribute("style", "--bs-bg-opacity: .5")
         searchHistoryEl.appendChild(searchEl);
         
         // listen to clicks on previous searches and trigger a "search click"
@@ -219,6 +222,7 @@ var saveSearches = function (cityName) {
 };
 
 var createFiveDayForecast = function (arrayOfObjects) {
+    // length of arrayOfObjects same length as number of children of fiveDayForecastEl
     let i = 0;
     isFiveDayForecast = true;
 
