@@ -189,9 +189,9 @@ var displaySearches = function () {
         searchEl.setAttribute("class", "d-block w-100 bg-secondary bg-gradient my-3 rounded text-center");
         searchEl.setAttribute("style", "--bs-bg-opacity: .5")
         searchHistoryEl.appendChild(searchEl);
-        
+
         // listen to clicks on previous searches and trigger a "search click"
-        searchEl.addEventListener("click", function(e){
+        searchEl.addEventListener("click", function (e) {
             cityTextEl.value = citySearches[i].city;
             $("#search").trigger("click");
         });
@@ -242,12 +242,30 @@ var removeForecast = function () {
     });
 };
 
-var startDisplayForecast = function(event) {
+// capitalize each string passed through function
+var parseCityName = function (string) {
+    var holdArr = string.split(" ");
+    var holdStr = "";
+
+    for (let i=0; i<holdArr.length; i++) {
+        var firstCharCap = holdArr[i][0].toUpperCase();
+        holdArr[i] = firstCharCap.concat(holdArr[i].substring(1));
+        if (!(i === holdArr.length-1)) {
+            holdStr = holdStr.concat(holdArr[i], " ");
+        } else {
+            holdStr = holdStr.concat(holdArr[i]);
+        }
+    }
+    return(holdStr);
+};
+
+
+var startDisplayForecast = function (event) {
     event.preventDefault();
 
     removeForecast();
     var cityName = {
-        city: cityTextEl.value
+        city: parseCityName(cityTextEl.value)
     };
     // url to get current weather data
     var url1 = "https://api.openweathermap.org/data/2.5/weather?q=" + cityName.city + "&appid=" + apiKey + "&units=imperial";
