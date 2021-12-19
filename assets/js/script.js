@@ -1,4 +1,9 @@
-// Listen to 
+// TO DO
+// Add Cards to 5 day weather forecast
+// Add Card to current day forecast
+// Add card to recent searches
+
+// Global Variables
 var formEl = document.getElementById("city-search");
 var currentForecastEl = document.getElementById("current-forecast");
 var fiveDayForecastEl = document.getElementById("five-day-forecast");
