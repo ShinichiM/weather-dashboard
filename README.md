@@ -1,8 +1,6 @@
 # Weather Dashboard
 ## Overview
-The weather dashboard is your go-to platform to get the latest updates on current and future forecasted weather! 
-
-The dashboard gives you accurate and current temperature readings up to a 1/100th of a degree (Fahrenheit) along with wind speeds (MPH), humidity (%), and UV indices. 
+The weather dashboard is an application that provides users with current and future weather forecasts for any city. By using web APIs from [OpenWeatherMap](https://openweathermap.org/) the dashboard gives you accurate temperature readings up to 1% of a degree (Fahrenheit/Celcius/Kelvin) along with wind speeds, humidity, and UV indices. 
 
 ## Key Technologies 
 - Moment.js
@@ -11,19 +9,38 @@ The dashboard gives you accurate and current temperature readings up to a 1/100t
 - Javascript
 
 ## Key Notes
-```
 - The weather dashboard pulls data from a singular source, (https://openweathermap.org/api),
-with api fetch logic contained in areas below. 
-```
-<img width="713" alt="image" src="https://user-images.githubusercontent.com/62361626/145689830-b962bc39-7706-4418-b59c-df114dc682f2.png">
+with standard JavaScript fetch logic such as below. 
 
+```js
+  fetch(url)
+  .then(response => response.json())
+  .then(data => {'Do something with Data'})
+  .catch(err => {'Do something with Error'})
 ```
-- Data are stored in objects that are then pushed into an array for later processing and data storing. 
-- Source data is stored in large arrays containing weather data in 3 hour time blocks, as such we have
-parsed through the data selecting entries with the maximum temperature for a given day. A snippet of
-the logic is shown below.
+
+- OpenWeatherMap contains multiple [API endpoints](https://openweathermap.org/api) to obtain weather data. 
+
+In this application we have used the {Current Weather Data}, {One Call API}, and {5 Day / 3 Hour Forecast} APIs. One Call API is used to obtain UV Indices of each city.
+
+- All current weather attributes are stored in objects returned by the API call and consolidated into a single data point in the applicaiton. This is stored in a variable ```currentWeather```
+```js
+ currentWeather = {
+                city: cityName.city,
+                temp: data.main.temp,
+                wind: data.wind.speed,
+                humidity: data.main.humidity,
+                icon: data.weather[0].icon
+            };
 ```
-<img width="769" alt="image" src="https://user-images.githubusercontent.com/62361626/145690045-8c525748-e116-4a93-ba85-79fe3bd8335d.png">
+
+- To obtain UV Indices from {One Call API} we need Latitude and Longitude coordinates of the city that a user inputs. We get these inputs from the {Current Weather API} with ``` data.coord.lat and data.coord.lon ```
+
+### Issues and Problems
+- 5 day forecast data is returned in large arrays containing chunks of data, 5 days spread evenly in 3 hour time blocks. As such we need a method to select how we can manipulate the data to give an accurate forecast.
+
+We have decided to parse through the raw 5 day forecast data and selected entries with the maximum temperature to represent that day's forecast. We could have also taken the average of all the weather attributes for each block (day) of data. We decided it's best to prepare for the worst and hope for the best!
+
 
 ## Deployment
 A final working prototype of the dashboard is available here: [Weather Dashboard](https://shinichim.github.io/weather-dashboard/)
