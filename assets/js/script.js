@@ -274,6 +274,7 @@ var startDisplayForecast = function (event) {
     removeForecast();
 
     var cityName = parseCityName(cityTextEl.value); 
+    if (!cityName) {return}
     // url to get current weather data
     var url1 = "https://api.openweathermap.org/data/2.5/weather?q=" + cityName + "&appid=" + apiKey + "&units=imperial";
     fetch(url1)
