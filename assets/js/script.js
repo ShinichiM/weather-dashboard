@@ -187,20 +187,18 @@ var createCurrentDayForecast = function (obj, container, isFiveDayForecast) {
     }
 };
 
-var displaySearches = function () {
-    for (let i = 0; i < citySearches.length; i++) {
-        let searchEl = document.createElement("button");
-        searchEl.textContent = citySearches[i].city;
-        searchEl.setAttribute("class", "d-block w-100 bg-secondary bg-gradient my-3 rounded text-center");
-        searchEl.setAttribute("style", "--bs-bg-opacity: .5")
-        searchHistoryEl.appendChild(searchEl);
+var displaySearch = function (cityName) {
+    let searchEl = document.createElement("button");
+    searchEl.textContent = cityName;
+    searchEl.setAttribute("class", "d-block w-100 bg-secondary bg-gradient my-3 rounded text-center");
+    searchEl.setAttribute("style", "--bs-bg-opacity: .5")
+    searchHistoryEl.appendChild(searchEl);
 
-        // listen to clicks on previous searches and trigger a "search click"
-        searchEl.addEventListener("click", function (e) {
-            cityTextEl.value = citySearches[i].city;
-            $("#search").trigger("click");
-        });
-    }
+    // listen to clicks on previous searches and trigger a "search click"
+    searchEl.addEventListener("click", function (e) {
+        cityTextEl.value = cityName;
+        $("#search").trigger("click");
+   });
 };
 
 // load previous searches from local storage and update citySearches array.
@@ -212,13 +210,16 @@ var loadSearches = function () {
         for (let i = 0; i < previousCitySearches.length; i++) {
             citySearches.push(previousCitySearches[i]);
         }
+    } else {
+        return
     }
+    previousCitySearches.forEach(element => displaySearch(element)); 
 };
 
 // save searches to local storage.
 var saveSearches = function (cityName) {
     for (let index = 0; index < citySearches.length; index++) {
-        if (citySearches[index].city == cityName.city) {
+        if (citySearches[index] == cityName) {
             return
         }
     }
@@ -249,6 +250,8 @@ var removeForecast = function () {
 
 // capitalize each string passed through function
 var parseCityName = function (string) {
+    if (!string) {return false}
+
     var holdArr = string.split(" ");
     var holdStr = "";
 
@@ -269,11 +272,10 @@ var startDisplayForecast = function (event) {
     event.preventDefault();
 
     removeForecast();
-    var cityName = {
-        city: parseCityName(cityTextEl.value)
-    };
+
+    var cityName = parseCityName(cityTextEl.value); 
     // url to get current weather data
-    var url1 = "https://api.openweathermap.org/data/2.5/weather?q=" + cityName.city + "&appid=" + apiKey + "&units=imperial";
+    var url1 = "https://api.openweathermap.org/data/2.5/weather?q=" + cityName + "&appid=" + apiKey + "&units=imperial";
     fetch(url1)
         .then(response => response.json())
         .then(data => {
@@ -282,7 +284,7 @@ var startDisplayForecast = function (event) {
             var lon = data.coord.lon;
 
             currentWeather = {
-                city: cityName.city,
+                city: cityName,
                 temp: data.main.temp,
                 wind: data.wind.speed,
                 humidity: data.main.humidity,
@@ -301,7 +303,7 @@ var startDisplayForecast = function (event) {
                 });
 
             // url for 5 day forecast
-            var url3 = "https://api.openweathermap.org/data/2.5/forecast?q=" + cityName.city + "&appid=" + apiKey + "&units=imperial";
+            var url3 = "https://api.openweathermap.org/data/2.5/forecast?q=" + cityName + "&appid=" + apiKey + "&units=imperial";
 
             // get 5 day forecast
             fetch(url3)
@@ -312,6 +314,7 @@ var startDisplayForecast = function (event) {
                     // Update 5-day forecast cards
                     createFiveDayForecast(fiveDayForecast);
                 });
+            if (citySearches.filter(element => element === cityName).length === 0) {displaySearch(cityName)};
             saveSearches(cityName);
             cityTextEl.value = "";
         }).catch((error) => {
@@ -322,7 +325,6 @@ var startDisplayForecast = function (event) {
 };
 
 loadSearches();
-displaySearches();
 
 // Event listener for form submits
 searchButtonEl.addEventListener("submit", startDisplayForecast);
